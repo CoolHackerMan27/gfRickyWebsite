@@ -45,7 +45,8 @@ app = FastAPI(title="Rickify JSON Processor")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:4173"],
+    allow_origins=["http://localhost:5173", "http://localhost:4173",
+                   "https://gf-ricky-website-2t900e5r8-coolhackerman27s-projects.vercel.app", "https://gf-ricky-website.vercel.app",],
     allow_methods=["*"],
     allow_headers=["*"],
 )
