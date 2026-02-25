@@ -310,8 +310,48 @@
         margin-top: 24px;
     }
 
+    /* Loading overlay */
+    .loadingOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(51, 51, 51, 0.7);
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+    }
+    .spinner {
+        width: 60px;
+        height: 60px;
+        border: 5px solid rgba(246, 235, 198, 0.3);
+        border-top: 5px solid #f6ebc6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    .loadingText {
+        color: #f6ebc6;
+        font-size: 1.2rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+
 </style>
 
+
+{#if isLoading}
+    <div class="loadingOverlay">
+        <div class="spinner"></div>
+        <span class="loadingText">Crunching your data...(the backend server is slow af so it might take a while)</span>
+    </div>
+{/if}
 
 <div class="container">
     <!-- Floating stars background -->
