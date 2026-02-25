@@ -9,7 +9,38 @@ from typing import List
 import tempfile
 import os
 from pathlib import Path
+# hardcoded list of rickys songs.
+rickySongs = [
+    "Line Without A Hook",
+    "Mr Loverman",
+    "Boy Toy",
+    "Nobody Likes Me",
+    "Black Fins",
+    "Sorry for Me",
+    "Talk to you",
+    "Out like a Light",
+    "My Heart is Buried in Venice",
+    "I Dont't Love You Anymore",
+    "Get to You",
+    "Out Like a Light 2",
+    "Snow",
+    "Cabo",
+    "Dont Know How",
+    "Last Night",
+    "California",
+    "Get Used To It",
+    "Cars",
+    "Better",
+    "Sunday Best",
+    "Don't Say That",
+    "Eraser"]
 
+rickyAlbums = [
+    "Montgomery Ricky",
+    "Edits",
+    "Rick",
+    "Ricky(y)"
+]
 app = FastAPI(title="Rickify JSON Processor")
 
 app.add_middleware(
@@ -23,23 +54,153 @@ app.add_middleware(
 executor = ProcessPoolExecutor(max_workers=4)
 
 
+def getAlbumByArtist(jsonData, artistName):
+    albumsByArtist = []
+    for item in jsonData:
+        try:
+            if artistName in item["master_metadata_album_artist_name"]:
+                albumsByArtist.append(item["master_metadata_album_album_name"])
+        except Exception as e:
+            # print(f"Error processing item: {e}")
+            continue
+    # remove duplicates
+    albumsByArtist = list(set(albumsByArtist))
+    return albumsByArtist
+
+
+def percentAlbumInListened(jsonData, albumList):
+    albumsListened = []
+    for item in jsonData:
+        try:
+            albumName = item["master_metadata_album_album_name"]
+            if albumName != "None":
+                albumsListened.append(albumName)
+        except Exception as e:
+            # print(f"Error processing item: {e}")
+            continue
+    albumsListened = list(set(albumsListened))
+    count = 0
+    for album in albumList:
+        if album in albumsListened:
+            count += 1
+    percent = (count / len(albumList)) * 100
+    return percent
+
+
+def percentSongsInListened(jsonData, songList):
+    songsListened = []
+    for item in jsonData:
+        try:
+            songName = item["master_metadata_track_name"]
+            if songName != "None":
+                songsListened.append(songName)
+        except Exception as e:
+            # print(f"Error processing item: {e}")
+            continue
+    songsListened = list(set(songsListened))
+    count = 0
+    for song in songList:
+        if song in songsListened:
+            count += 1
+    percent = (count / len(songList)) * 100
+    return percent
+
+
+def rankSongsByPlayCount(jsonData):
+    songPlayCount = {}
+    for item in jsonData:
+        try:
+            songName = item["master_metadata_track_name"]
+            if songName != "None":
+                if songName in songPlayCount:
+                    songPlayCount[songName] += 1
+                else:
+                    songPlayCount[songName] = 1
+        except Exception as e:
+            # print(f"Error processing item: {e}")
+            continue
+    rankedSongs = sorted(
+        songPlayCount.items(), key=lambda x: x[1], reverse=True)
+    return rankedSongs
+
+
+def rankSongsByTimeListened(jsonData, songs):
+    songTimeListened = {}
+    for item in jsonData:
+        try:
+            songName = item["master_metadata_track_name"]
+            if songName in songs:
+                if songName in songTimeListened:
+                    songTimeListened[songName] += item["ms_played"]
+                else:
+                    songTimeListened[songName] = item["ms_played"]
+        except Exception as e:
+            # print(f"Error processing item: {e}")
+            continue
+    # remove songs with 0 time listened and songs not in songs list
+    songTimeListened = {k: v for k,
+                        v in songTimeListened.items() if v > 0 and k in songs}
+    rankedSongs = sorted(
+        songTimeListened.items(), key=lambda x: x[1], reverse=True)
+    return rankedSongs
+
+
+def getSongByArtist(jsonData, artistName):
+    songsByArtist = []
+    for item in jsonData:
+        try:
+            if artistName in item["master_metadata_album_artist_name"]:
+                songsByArtist.append(item["master_metadata_track_name"])
+        except Exception as e:
+            # print(f"Error processing item: {e}")
+            continue
+    # remove duplicates
+    songsByArtist = list(set(songsByArtist))
+    return songsByArtist
+
+
+def getTimeListenedByArtist(jsonData, artistName):
+    timeListened = 0
+    for item in jsonData:
+        try:
+            if artistName in item["master_metadata_album_artist_name"]:
+                timeListened += item["ms_played"]
+        except Exception as e:
+            # print(f"Error processing item: {e}")
+            continue
+    timeListened = timeListened / 60000
+    return timeListened
+
+
 def process_json_file(file_path: str) -> dict:
     """
     Process a single JSON file using streaming parser.
     Modify this function with your 'rickify' logic.
     """
-    results = []
 
     with open(file_path, 'rb') as f:
 
         parser = ijson.items(f, 'item')  # Assumes root is an array
-
+        allData = []
         for item in parser:
-
-            processed = rickify_item(item)
-            results.append(processed)
-
-    return {"file": os.path.basename(file_path), "count": len(results), "data": results}
+            allData.append(item)
+        songs = getSongByArtist(allData, "Ricky Montgomery")
+        albums = getAlbumByArtist(allData, "Ricky Montgomery")
+        timeListened = getTimeListenedByArtist(allData, "Ricky Montgomery")
+        percentAlbums = percentAlbumInListened(allData, rickyAlbums)
+        percentSongs = percentSongsInListened(allData, rickySongs)
+        rankSongsByTime = rankSongsByTimeListened(allData, rickySongs)
+    result = {
+        "songs": songs,
+        "albums": albums,
+        "timeListened": timeListened,
+        "percentSongs": percentSongs,
+        "percentAlbums": percentAlbums,
+        "ranked": rankSongsByTime,
+        "numberOfSongs": len(songs),
+        "numberOfAlbums": len(albums)
+    }
+    return result
 
 
 def rickify_item(item: dict) -> dict:

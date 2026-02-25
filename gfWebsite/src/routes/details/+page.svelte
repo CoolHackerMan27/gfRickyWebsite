@@ -1,11 +1,21 @@
 <script>
     import { goto } from "$app/navigation"
+    import { PUBLIC_PYTHON_API_URL } from "$env/static/public";
     import home from '$lib/assets/house.png';
     import star1 from '$lib/assets/star1.png';
 
-
+    let isLoading = false;
+    let songs = [];
+    let albums = [];
+    let percentSongs = 0;
+    let percentAlbums = 0;
+    let timeListened = 0;
+    let rankedSongs = [];
+    let numberOfSongs = 0;
+    let numberOfAlbums = 0;
     function uploadFiles(){
         //opens file dialog and uploads files to server
+
         const input = document.createElement('input');
         input.type = 'file';
         input.multiple = true;
@@ -17,16 +27,37 @@
             const formData = new FormData();
             files.forEach(file => formData.append('files', file));
             try {
-                const response = await fetch('/api/upload', {
+                isLoading = true;
+                const response = await fetch(PUBLIC_PYTHON_API_URL + '/process-batch', {
                     method: 'POST',
                     body: formData
                 });
                 if (response.ok) {
-                    alert('Files uploaded successfully!');
+                    isLoading = false;
+                    //Now we update the page with the new data
+                    const data = await response.json();
+                    console.log('Upload response:', data);
+                    // Update UI with new data (e.g., refresh details view)
+                    if (data.results && data.results.length > 0) {
+                        const stats = data.results[0]; // Grab the first file processed
+
+                        songs = stats.songs;
+                        albums = stats.albums;
+                        percentSongs = stats.percentSongs;
+                        percentAlbums = stats.percentAlbums;
+                        //# Fix formatting to look nice (e.g. 120 vs 120.43242)
+                        timeListened = Math.round(stats.timeListened); 
+                        rankedSongs = stats.ranked;
+                        numberOfSongs = stats.numberOfSongs;
+                        numberOfAlbums = stats.numberOfAlbums;
+                    }
+                    
                 } else {
+                    isLoading = false;
                     alert('Upload failed.');
                 }
             } catch (error) {
+                isLoading = false;
                 console.error('Error uploading files:', error);
                 alert('An error occurred during upload.');
             }
@@ -186,11 +217,97 @@
         padding: 32px 32px;
         flex: 1;
         display: flex;
+        flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         box-shadow: 4px 4px 0px #333;
         margin-right: 20px;
         margin-left: 20px;
+        overflow-y: auto;
+    }
+    .songsListend h3, .percentListened h3 {
+        margin: 0 0 16px 0;
+        font-size: 1.4rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        border-bottom: 2px solid #f6ebc6;
+        padding-bottom: 8px;
+        width: 100%;
+        text-align: center;
+    }
+    .songList {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        counter-reset: song;
+    }
+    .songList li {
+        counter-increment: song;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 12px;
+        margin-bottom: 6px;
+        background-color: rgba(246, 235, 198, 0.12);
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: normal;
+        transition: background-color 0.15s ease;
+    }
+    .songList li:hover {
+        background-color: rgba(246, 235, 198, 0.22);
+    }
+    .songList li::before {
+        content: counter(song);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 28px;
+        height: 28px;
+        background-color: #f6ebc6;
+        color: #5276b4;
+        border-radius: 50%;
+        font-weight: bold;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+    }
+    .songMs {
+        margin-left: auto;
+        font-size: 0.8rem;
+        opacity: 0.7;
+        white-space: nowrap;
+    }
+    .progressSection {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    .progressLabel {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.95rem;
+        margin-bottom: 6px;
+        font-weight: normal;
+    }
+    .progressBar {
+        width: 100%;
+        background: rgba(51, 51, 51, 0.5);
+        height: 14px;
+        border-radius: 7px;
+        overflow: hidden;
+        border: 2px solid #333;
+    }
+    .progressFill {
+        height: 100%;
+        border-radius: 5px;
+        background: #f6ebc6;
+        transition: width 0.6s ease;
+    }
+    .waitingText {
+        font-size: 1rem;
+        font-weight: normal;
+        opacity: 0.7;
+        margin-top: 24px;
     }
 
 </style>
@@ -219,14 +336,64 @@
             Upload Files
         </button>
     </div>
-    <div class= "details">
-        <card class="minutesCard"> you listened to __ minutes</card>
-        <card class="songsCard">you listened to __ songs</card>
-        <card class="albumsCard"> you listened to __ albums</card>
+   <div class= "details">
+        {#if timeListened > 0}
+            <card class="minutesCard">You listened to {timeListened} minutes</card>
+            <card class="songsCard">You listened to {numberOfSongs} unique songs</card>
+            <card class="albumsCard">You listened to {numberOfAlbums} albums</card>
+        {:else}
+            <!-- Placeholder state before upload -->
+            <card class="minutesCard">Upload data to see stats</card>
+            <card class="songsCard">Upload data to see stats</card>
+            <card class="albumsCard">Upload data to see stats</card>
+        {/if}
     </div>
+
     <div class= "songs">
-        <card class="songsListend">This will be a list of songs</card>
-        <card class="percentListened">Show what % has been listed to of his songs</card>
+        <div class="songsListend">
+            <h3>Top Songs</h3>
+            {#if rankedSongs.length > 0}
+                <ol class="songList">
+                    {#each rankedSongs.slice(0, 5) as [songName, ms]}
+                       <li>
+                           <span>{songName}</span>
+                           <span class="songMs">{Math.round(ms / 60000)} min</span>
+                       </li>
+                    {/each}
+                </ol>
+            {:else}
+                <p class="waitingText">Waiting for data...</p>
+            {/if}
+        </div>
+        
+        <div class="percentListened">
+            <h3>Completion</h3>
+            {#if timeListened > 0}
+                <div class="progressSection">
+                    <div class="progressLabel">
+                        <span>Songs</span>
+                        <span>{percentSongs.toFixed(1)}%</span>
+                    </div>
+                    <div class="progressBar">
+                        <div class="progressFill" style="width: {percentSongs}%;"></div>
+                    </div>
+                </div>
+                <div class="progressSection">
+                    <div class="progressLabel">
+                        <span>Albums</span>
+                        <span>{percentAlbums.toFixed(1)}%</span>
+                    </div>
+                    <div class="progressBar">
+                        <div class="progressFill" style="width: {percentAlbums}%;"></div>
+                    </div>
+                </div>
+            {:else}
+                <p class="waitingText">Waiting for data...</p>
+            {/if}
+        </div>
+    </div>
+    <div>
+    made with love by <a href="https://github.com/CoolHackerMan27/" target="_blank">Plank</a>
     </div>
     
 </div>
