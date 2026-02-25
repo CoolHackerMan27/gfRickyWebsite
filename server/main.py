@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-import ijson  # Streaming JSON parser - memory efficient
+import ijson
 import json
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
@@ -9,7 +9,7 @@ from typing import List
 import tempfile
 import os
 from pathlib import Path
-# hardcoded list of rickys songs.
+# hardcoded list of ricky & the honeysticks songs.
 rickySongs = [
     "Line Without A Hook",
     "Mr Loverman",
@@ -31,15 +31,18 @@ rickySongs = [
     "Get Used To It",
     "Cars",
     "Better",
-    "Sunday Best",
     "Don't Say That",
-    "Eraser"]
+    "Eraser",
+    "Sunday Best",
+]
+
 
 rickyAlbums = [
     "Montgomery Ricky",
     "Edits",
     "Rick",
-    "Ricky(y)"
+    "Ricky(y)",
+    "The Honeysticks"
 ]
 app = FastAPI(title="Rickify JSON Processor")
 
@@ -125,18 +128,21 @@ def rankSongsByPlayCount(jsonData):
     return rankedSongs
 
 
-def rankSongsByTimeListened(jsonData, songs):
+def rankSongsByTimeListened(jsonData, songs, artistNames=None):
     songTimeListened = {}
     for item in jsonData:
         try:
-            songName = item["master_metadata_track_name"]
-            if songName in songs:
-                if songName in songTimeListened:
-                    songTimeListened[songName] += item["ms_played"]
-                else:
-                    songTimeListened[songName] = item["ms_played"]
-        except Exception as e:
-            # print(f"Error processing item: {e}")
+            songName = item.get("master_metadata_track_name")
+            if not songName or songName not in songs:
+                continue
+            # if artistNames provided, ensure the item's artist matches one of them
+            if artistNames:
+                artist = item.get("master_metadata_album_artist_name", "")
+                if not any(a in artist for a in artistNames):
+                    continue
+            songTimeListened[songName] = songTimeListened.get(
+                songName, 0) + item.get("ms_played", 0)
+        except Exception:
             continue
     # remove songs with 0 time listened and songs not in songs list
     songTimeListened = {k: v for k,
@@ -188,9 +194,17 @@ def process_json_file(file_path: str) -> dict:
         songs = getSongByArtist(allData, "Ricky Montgomery")
         albums = getAlbumByArtist(allData, "Ricky Montgomery")
         timeListened = getTimeListenedByArtist(allData, "Ricky Montgomery")
+        # add "The Honeysticks" a band he's in
+        songs.extend(getSongByArtist(allData, "The Honeysticks"))
+        albums.extend(getAlbumByArtist(allData, "The Honeysticks"))
+        timeListened += getTimeListenedByArtist(allData, "The Honeysticks")
+        # deduplicate after merging both artists
+        songs = list(set(songs))
+        albums = list(set(albums))
         percentAlbums = percentAlbumInListened(allData, rickyAlbums)
         percentSongs = percentSongsInListened(allData, rickySongs)
-        rankSongsByTime = rankSongsByTimeListened(allData, rickySongs)
+        rankSongsByTime = rankSongsByTimeListened(
+            allData, rickySongs, ["Ricky Montgomery", "The Honeysticks"])
     result = {
         "songs": songs,
         "albums": albums,
@@ -207,6 +221,46 @@ def process_json_file(file_path: str) -> dict:
 def rickify_item(item: dict) -> dict:
 
     return item
+
+
+def aggregate_results(results: List[dict]) -> dict:
+    """Combine multiple file results into one grand total."""
+
+    all_songs = set()
+    all_albums = set()
+    total_time = 0.0
+    merged_rankings = {}
+
+    for res in results:
+        all_songs.update(res["songs"])
+        all_albums.update(res["albums"])
+        total_time += res["timeListened"]
+
+        for song_name, ms_played in res["ranked"]:
+            if song_name in merged_rankings:
+                merged_rankings[song_name] += ms_played
+            else:
+                merged_rankings[song_name] = ms_played
+
+    # Percentages: how many of the hardcoded lists were found in the data
+    percentSongs = (sum(1 for s in rickySongs if s in all_songs) /
+                    len(rickySongs)) * 100 if rickySongs else 0
+    percentAlbums = (sum(1 for a in rickyAlbums if a in all_albums) /
+                     len(rickyAlbums)) * 100 if rickyAlbums else 0
+
+    final_ranked = sorted(merged_rankings.items(),
+                          key=lambda x: x[1], reverse=True)
+
+    return {
+        "songs": list(all_songs),
+        "albums": list(all_albums),
+        "timeListened": total_time,
+        "percentSongs": percentSongs,
+        "percentAlbums": percentAlbums,
+        "ranked": final_ranked,
+        "numberOfSongs": len(all_songs),
+        "numberOfAlbums": len(all_albums)
+    }
 
 
 @app.post("/process")
@@ -252,11 +306,10 @@ async def process_multiple_files(files: List[UploadFile] = File(...)):
             for _, path in temp_paths
         ]
         results = await asyncio.gather(*tasks)
+        # aggregate results if needed, for now just return list of results
+        final_result = aggregate_results(results)
+        return final_result
 
-        return {
-            "total_files": len(results),
-            "results": results
-        }
     finally:
         # Clean up all temp files
         for _, path in temp_paths:

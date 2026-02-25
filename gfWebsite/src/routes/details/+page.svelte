@@ -34,12 +34,12 @@
                 });
                 if (response.ok) {
                     isLoading = false;
-                    //Now we update the page with the new data
+                    
                     const data = await response.json();
                     console.log('Upload response:', data);
-                    // Update UI with new data (e.g., refresh details view)
-                    if (data.results && data.results.length > 0) {
-                        const stats = data.results[0]; // Grab the first file processed
+                    
+                    if (data && data.songs) {
+                        const stats = data; 
 
                         songs = stats.songs;
                         albums = stats.albums;
