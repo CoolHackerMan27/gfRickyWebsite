@@ -46,7 +46,9 @@ rickySongs = [
     "Truth or Dare",
     "Type A",
     "Unknown Phantom",
-    "We Got Married Twice (Interlude)"
+    "We Got Married Twice (Interlude)",
+    "Some Kinda Man",
+    "Object of Desire"
 ]
 
 rickyAlbums = [
@@ -81,15 +83,15 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(
     CORSMiddleware,
     # Evil origins
-    # allow_origins=["http://localhost:5173/details", "http://localhost:4173",
-    #                "https://gf-ricky-website-2t900e5r8-coolhackerman27s-projects.vercel.app",
-    #                "https://gf-ricky-website.vercel.app", "https://rickyif.vercel.app"],
+    allow_origins=["http://localhost:5173/details", "http://localhost:4173",
+                   "https://gf-ricky-website-2t900e5r8-coolhackerman27s-projects.vercel.app",
+                   "https://gf-ricky-website.vercel.app", "https://rickyif.vercel.app"],
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-executor = ProcessPoolExecutor(max_workers=4)
+executor = ProcessPoolExecutor(max_workers=1)
 
 
 def process_json_file(file_path: str) -> dict:
