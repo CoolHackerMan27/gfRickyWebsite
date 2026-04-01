@@ -10,6 +10,7 @@
     let percentSongs = 0;
     let percentAlbums = 0;
     let timeListened = 0;
+    /** @type {[string, number][]} */
     let rankedSongs = [];
     let numberOfSongs = 0;
     let numberOfAlbums = 0;
@@ -72,10 +73,10 @@
         flex-direction: column;
         align-items: center;
         justify-content: flex-start;
-        height: 100vh;
+        min-height: 100vh;
         background-color: #f6ebc6;
         position: relative;
-        overflow: hidden;
+        overflow-x: hidden;
     }
 
     /* Floating stars */
@@ -117,12 +118,14 @@
 
     .banner {
         width: 100%;
+        max-width: 1200px;
         display: flex;
         flex-direction: row;
         align-items: stretch;
         justify-content: flex-start;
         padding: 20px;
         gap: 20px;
+        box-sizing: border-box;
     }
     .homeBtn {
         background-color: #5276b4;
@@ -134,6 +137,7 @@
         cursor: pointer;
         transition: all 0.2s ease;
         box-shadow: 4px 4px 0px #333;
+        min-height: 44px;
     }
     .homeBtn:hover {
         transform: translate(2px, 2px);
@@ -163,6 +167,7 @@
         cursor: pointer;
         transition: all 0.2s ease;
         box-shadow: 4px 4px 0px #333;
+        min-height: 44px;
     }
     .uploadBtn:hover {
         transform: translate(2px, 2px);
@@ -170,9 +175,9 @@
     }
 
     .details {
-        margin-top: 40px;
+        margin-top: 24px;
         width: 100%;
-        height: 20%;
+        max-width: 1200px;
         color: #f6ebc6;
         border-radius: 8px;
         display: flex;
@@ -182,6 +187,8 @@
         font-size: 1.5rem;
         font-weight: bold;
         padding: 16px 32px;
+        gap: 20px;
+        box-sizing: border-box;
     }
     .minutesCard, .songsCard, .albumsCard {
         background-color: #5276b4;
@@ -193,13 +200,13 @@
         align-items: center;
         justify-content: center;
         box-shadow: 4px 4px 0px #333;
-        margin-right: 20px;
-        margin-left: 20px;
+        min-height: 120px;
+        text-align: center;
     }
     .songs {
-        margin-top: 40px;
+        margin-top: 24px;
         width: 100%;
-        height: 80%;
+        max-width: 1200px;
         color: #f6ebc6;
         border-radius: 8px;
         display: flex;
@@ -209,6 +216,8 @@
         font-size: 1.5rem;
         font-weight: bold;
         padding: 16px 32px;
+        gap: 20px;
+        box-sizing: border-box;
     }
     .songsListend, .percentListened {
         background-color: #5276b4;
@@ -221,8 +230,7 @@
         align-items: center;
         justify-content: flex-start;
         box-shadow: 4px 4px 0px #333;
-        margin-right: 20px;
-        margin-left: 20px;
+        min-height: 280px;
         overflow-y: auto;
     }
     .songsListend h3, .percentListened h3 {
@@ -247,13 +255,15 @@
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 8px 12px;
+        padding: 10px 12px;
         margin-bottom: 6px;
         background-color: rgba(246, 235, 198, 0.12);
         border-radius: 6px;
         font-size: 1rem;
         font-weight: normal;
         transition: background-color 0.15s ease;
+        min-height: 44px;
+        box-sizing: border-box;
     }
     .songList li:hover {
         background-color: rgba(246, 235, 198, 0.22);
@@ -341,6 +351,95 @@
         font-size: 1.2rem;
         font-weight: bold;
         letter-spacing: 1px;
+        text-align: center;
+        padding: 0 16px;
+    }
+
+    @media (max-width: 900px) {
+        .details, .songs {
+            font-size: 1.2rem;
+        }
+
+        .introCard {
+            font-size: 1.2rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .stars {
+            display: none;
+        }
+
+        .banner, .details, .songs {
+            flex-direction: column;
+            padding-left: 16px;
+            padding-right: 16px;
+            gap: 12px;
+        }
+
+        .banner {
+            padding-top: 16px;
+            padding-bottom: 0;
+        }
+
+        .details, .songs {
+            margin-top: 16px;
+            padding-top: 0;
+            padding-bottom: 0;
+            font-size: 1.1rem;
+        }
+
+        .introCard {
+            width: 100%;
+            font-size: 1.1rem;
+            box-sizing: border-box;
+        }
+
+        .uploadBtn {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .minutesCard, .songsCard, .albumsCard,
+        .songsListend, .percentListened {
+            width: 100%;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .songsListend, .percentListened {
+            min-height: 200px;
+        }
+
+        .songsListend h3, .percentListened h3 {
+            font-size: 1.1rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .homeBtn,
+        .uploadBtn {
+            padding: 12px 16px;
+        }
+
+        .minutesCard, .songsCard, .albumsCard,
+        .songsListend, .percentListened {
+            padding: 16px;
+        }
+
+        .songList li {
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+
+        .songMs {
+            font-size: 0.75rem;
+        }
+
+        .loadingText {
+            font-size: 1rem;
+        }
     }
 
 </style>
@@ -371,21 +470,21 @@
         <button class="homeBtn" on:click={() => goto("/")}>
             <img src={home} alt="Home" style="width: 24px; height: 24px;" />
         </button>
-        <card class="introCard"> your stats   </card>
+        <div class="introCard"> your stats   </div>
         <button class="uploadBtn" on:click={uploadFiles}>
             Upload Files
         </button>
     </div>
    <div class= "details">
         {#if timeListened > 0}
-            <card class="minutesCard">You listened to {timeListened} minutes</card>
-            <card class="songsCard">You listened to {numberOfSongs} unique songs</card>
-            <card class="albumsCard">You listened to {numberOfAlbums} albums</card>
+            <div class="minutesCard">You listened to {timeListened} minutes</div>
+            <div class="songsCard">You listened to {numberOfSongs} unique songs</div>
+            <div class="albumsCard">You listened to {numberOfAlbums} albums</div>
         {:else}
             <!-- Placeholder state before upload -->
-            <card class="minutesCard">Upload data to see stats</card>
-            <card class="songsCard">Upload data to see stats</card>
-            <card class="albumsCard">Upload data to see stats</card>
+            <div class="minutesCard">Upload data to see stats</div>
+            <div class="songsCard">Upload data to see stats</div>
+            <div class="albumsCard">Upload data to see stats</div>
         {/if}
     </div>
 
@@ -433,7 +532,7 @@
         </div>
     </div>
     <div>
-    made with love by <a href="https://github.com/CoolHackerMan27/" target="_blank">Plank</a>
+    made with love by <a href="https://github.com/CoolHackerMan27/" target="_blank" rel="noopener noreferrer">Plank</a>
     </div>
     
 </div>

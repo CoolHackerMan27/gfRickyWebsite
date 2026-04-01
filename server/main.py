@@ -1,24 +1,61 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import ijson
 import asyncio
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from concurrent.futures import ProcessPoolExecutor
 from typing import List
 import tempfile
 import os
 
+
 # hardcoded lists of songs and albums to check against
 rickySongs = [
-    "Line Without A Hook", "Mr Loverman", "Boy Toy", "Nobody Likes Me",
-    "Black Fins", "Sorry for Me", "Talk to you", "Out like a Light",
-    "My Heart is Buried in Venice", "I Dont't Love You Anymore",
-    "Get to You", "Out Like a Light 2", "Snow", "Cabo", "Dont Know How",
-    "Last Night", "California", "Get Used To It", "Cars", "Better",
-    "Don't Say That", "Eraser", "Sunday Best",
+    "Black Fins",
+    "Boy Toy",
+    "Cabo",
+    "California",
+    "Don't Know How",
+    "Don't Say That",
+    "Eraser",
+    "Ethan's Song",
+    "Get Used to It",
+    "I'm Just Joking In This Interlude",
+    "In Your Pocket",
+    "It's Ok to Cry",
+    "Last Night",
+    "Line Without a Hook",
+    "Mom (Interlude)",
+    "Mr Loverman",
+    "My Heart Is Buried In Venice",
+    "Nobody Loves Me",
+    "Oh My My",
+    "One Way Mirror",
+    "Paper Towel",
+    "Reptilia",
+    "Ribbons (Outro)",
+    "Settle Down",
+    "Snow",
+    "Sorry for Me",
+    "Sometimes I Need to Be Alone",
+    "Superfan",
+    "Talk to You",
+    "This December",
+    "Truth or Dare",
+    "Type A",
+    "Unknown Phantom",
+    "We Got Married Twice (Interlude)"
 ]
 
 rickyAlbums = [
-    "Montgomery Ricky", "Edits", "Rick", "Ricky(y)", "The Honeysticks"
+    "Better",
+    "Cars",
+    "Get to You",
+    "I Don't Love You Anymore",
+    "Out Like a Light",
+    "Out Like a Light 2"
 ]
 
 
@@ -36,13 +73,18 @@ NORMALIZED_SONGS = {_normalize_key(s): s for s in rickySongs}
 NORMALIZED_ALBUMS = {_normalize_key(a): a for a in rickyAlbums}
 TARGET_ARTISTS = ["ricky montgomery", "the honeysticks"]
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="Rickify JSON Processor")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:4173",
-                   "https://gf-ricky-website-2t900e5r8-coolhackerman27s-projects.vercel.app",
-                   "https://gf-ricky-website.vercel.app", "https://rickyif.vercel.app"],
+    # Evil origins
+    # allow_origins=["http://localhost:5173/details", "http://localhost:4173",
+    #                "https://gf-ricky-website-2t900e5r8-coolhackerman27s-projects.vercel.app",
+    #                "https://gf-ricky-website.vercel.app", "https://rickyif.vercel.app"],
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -164,7 +206,8 @@ def aggregate_results(results: List[dict]) -> dict:
 
 
 @app.post("/process")
-async def process_single_file(file: UploadFile = File(...)):
+@limiter.limit("20/minute")
+async def process_single_file(request: Request, file: UploadFile = File(...)):
     if not file.filename.endswith('.json'):
         raise HTTPException(400, "File must be JSON")
 
@@ -183,7 +226,8 @@ async def process_single_file(file: UploadFile = File(...)):
 
 
 @app.post("/process-batch")
-async def process_multiple_files(files: List[UploadFile] = File(...)):
+@limiter.limit("10/minute")
+async def process_multiple_files(request: Request, files: List[UploadFile] = File(...)):
     temp_paths = []
     for file in files:
         if not file.filename.endswith('.json'):
