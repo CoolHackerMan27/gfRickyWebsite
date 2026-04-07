@@ -83,9 +83,9 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(
     CORSMiddleware,
     # Evil origins
-    allow_origins=["http://localhost:5173/details", "http://localhost:4173",
-                   "https://gf-ricky-website-2t900e5r8-coolhackerman27s-projects.vercel.app",
-                   "https://gf-ricky-website.vercel.app", "https://rickyif.vercel.app"],
+    #  allow_origins=["http://localhost:5173/details", "http://localhost:4173",
+    #                "https://gf-ricky-website-2t900e5r8-coolhackerman27s-projects.vercel.app",
+    #                "https://gf-ricky-website.vercel.app", "https://rickyif.vercel.app"],
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
@@ -119,6 +119,10 @@ def process_json_file(file_path: str) -> dict:
                 artist_lower = str(artist_name).lower()
                 if not any(target in artist_lower for target in TARGET_ARTISTS):
                     continue
+                if album_name:
+                    album_key = _normalize_key(album_name)
+                    if album_key in NORMALIZED_ALBUMS:
+                        found_albums_map[album_key] = NORMALIZED_ALBUMS[album_key]
 
                 track_key = _normalize_key(track_name)
                 if track_key in NORMALIZED_SONGS:
@@ -130,11 +134,6 @@ def process_json_file(file_path: str) -> dict:
 
                     song_play_counts[track_key] = song_play_counts.get(
                         track_key, 0) + ms_played
-
-                    if album_name:
-                        album_key = _normalize_key(album_name)
-                        if album_key in NORMALIZED_ALBUMS:
-                            found_albums_map[album_key] = NORMALIZED_ALBUMS[album_key]
 
             except Exception as e:
                 # Skip malformed items

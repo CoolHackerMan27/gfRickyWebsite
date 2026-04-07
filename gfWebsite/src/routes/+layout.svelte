@@ -19,3 +19,17 @@
 </svelte:head>
 
 {@render children()}
+
+<style>
+	:global(html, body) {
+		margin: 0;
+		padding: 0;
+		width: 100%;
+		min-height: 100%;
+		background: #f6ebc6;
+	}
+
+	:global(body) {
+		overflow-x: hidden;
+	}
+</style>

@@ -127,6 +127,9 @@
         gap: 20px;
         box-sizing: border-box;
     }
+    .bannerActions {
+        display: contents;
+    }
     .homeBtn {
         background-color: #5276b4;
         color: #f6ebc6;
@@ -155,7 +158,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 4px 4px 0px #333;
+        
     }
     .uploadBtn {
         background-color: #5276b4;
@@ -190,7 +193,7 @@
         gap: 20px;
         box-sizing: border-box;
     }
-    .minutesCard, .songsCard, .albumsCard {
+    .minutesCard, .songsCard{
         background-color: #5276b4;
         border: 3px solid #333;
         border-radius: 8px;
@@ -199,7 +202,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 4px 4px 0px #333;
+       
         min-height: 120px;
         text-align: center;
     }
@@ -229,9 +232,9 @@
         flex-direction: column;
         align-items: center;
         justify-content: flex-start;
-        box-shadow: 4px 4px 0px #333;
+       
         min-height: 280px;
-        overflow-y: auto;
+        overflow: hidden;
     }
     .songsListend h3, .percentListened h3 {
         margin: 0 0 16px 0;
@@ -249,6 +252,10 @@
         margin: 0;
         width: 100%;
         counter-reset: song;
+        max-height: calc((44px + 6px) * 5);
+        overflow-y: auto;
+        scrollbar-gutter: stable;
+        padding-right: 8px;
     }
     .songList li {
         counter-increment: song;
@@ -377,9 +384,28 @@
             gap: 12px;
         }
 
+        .bannerActions {
+            display: flex;
+            flex-direction: row;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .bannerActions > * {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
         .banner {
             padding-top: 16px;
             padding-bottom: 0;
+        }
+
+        .introCard {
+            width: 100%;
+            flex: none;
+            font-size: 1.1rem;
+            box-sizing: border-box;
         }
 
         .details, .songs {
@@ -389,18 +415,13 @@
             font-size: 1.1rem;
         }
 
-        .introCard {
-            width: 100%;
-            font-size: 1.1rem;
-            box-sizing: border-box;
-        }
-
+        .homeBtn,
         .uploadBtn {
             width: 100%;
             box-sizing: border-box;
         }
 
-        .minutesCard, .songsCard, .albumsCard,
+        .minutesCard, .songsCard, 
         .songsListend, .percentListened {
             width: 100%;
             margin: 0;
@@ -410,6 +431,10 @@
 
         .songsListend, .percentListened {
             min-height: 200px;
+        }
+
+        .songList {
+            max-height: calc((44px + 6px) * 5);
         }
 
         .songsListend h3, .percentListened h3 {
@@ -423,7 +448,7 @@
             padding: 12px 16px;
         }
 
-        .minutesCard, .songsCard, .albumsCard,
+        .minutesCard, .songsCard, 
         .songsListend, .percentListened {
             padding: 16px;
         }
@@ -467,24 +492,25 @@
     </div>
 
     <div class= "banner">
-        <button class="homeBtn" on:click={() => goto("/")}>
-            <img src={home} alt="Home" style="width: 24px; height: 24px;" />
-        </button>
+        <div class="bannerActions">
+            <button class="homeBtn" on:click={() => goto("/")}>
+                <img src={home} alt="Home" style="width: 24px; height: 24px;" />
+            </button>
+            <button class="uploadBtn" on:click={uploadFiles}>
+                Upload Files
+            </button>
+        </div>
         <div class="introCard"> your stats   </div>
-        <button class="uploadBtn" on:click={uploadFiles}>
-            Upload Files
-        </button>
     </div>
    <div class= "details">
         {#if timeListened > 0}
-            <div class="minutesCard">You listened to {timeListened} minutes</div>
-            <div class="songsCard">You listened to {numberOfSongs} unique songs</div>
-            <div class="albumsCard">You listened to {numberOfAlbums} albums</div>
+            <div class="minutesCard">You've listened for {timeListened} minutes</div>
+            <div class="songsCard">You've listened to {numberOfSongs} unique songs and {numberOfAlbums} unique albums</div>
         {:else}
             <!-- Placeholder state before upload -->
             <div class="minutesCard">Upload data to see stats</div>
             <div class="songsCard">Upload data to see stats</div>
-            <div class="albumsCard">Upload data to see stats</div>
+
         {/if}
     </div>
 
@@ -493,11 +519,11 @@
             <h3>Top Songs</h3>
             {#if rankedSongs.length > 0}
                 <ol class="songList">
-                    {#each rankedSongs.slice(0, 5) as [songName, ms]}
-                       <li>
-                           <span>{songName}</span>
-                           <span class="songMs">{Math.round(ms / 60000)} min</span>
-                       </li>
+                    {#each rankedSongs as [songName, ms]}
+                        <li>
+                            <span>{songName}</span>
+                            <span class="songMs">{Math.round(ms / 60000)} min</span>
+                        </li>
                     {/each}
                 </ol>
             {:else}
