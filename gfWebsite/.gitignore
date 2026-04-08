@@ -1,5 +1,9 @@
 node_modules
 
+#Tests & Logs
+logs/
+TestData/
+
 # Output
 .output
 .vercel

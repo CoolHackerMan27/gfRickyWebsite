@@ -48,16 +48,17 @@ rickySongs = [
     "Unknown Phantom",
     "We Got Married Twice (Interlude)",
     "Some Kinda Man",
-    "Object of Desire"
-]
-
-rickyAlbums = [
+    "Object of Desire",
     "Better",
     "Cars",
     "Get to You",
     "I Don't Love You Anymore",
     "Out Like a Light",
     "Out Like a Light 2"
+]
+
+rickyAlbums = [
+
 ]
 
 
