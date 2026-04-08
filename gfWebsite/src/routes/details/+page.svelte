@@ -1,6 +1,6 @@
 <script>
     import { goto } from "$app/navigation"
-    import { PUBLIC_PYTHON_API_URL } from "$env/static/public";
+    import { PUBLIC_SPOTIFY_CLIENT_ID } from "$env/static/public";
     import home from '$lib/assets/house.png';
     import star1 from '$lib/assets/star1.png';
 
@@ -14,56 +14,62 @@
     let rankedSongs = [];
     let numberOfSongs = 0;
     let numberOfAlbums = 0;
-    function uploadFiles(){
-        //opens file dialog and uploads files to server
+    //Testing Spotify API integration 
+    const clientId = PUBLIC_SPOTIFY_CLIENT_ID;   
+    const code = "";
 
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.multiple = true;
-        input.onchange = async () => {
-            if (!(input.files)){ 
-                return;
-            }
-            const files = Array.from(input.files);
-            const formData = new FormData();
-            files.forEach(file => formData.append('files', file));
-            try {
-                isLoading = true;
-                const response = await fetch(PUBLIC_PYTHON_API_URL + '/process-batch', {
-                    method: 'POST',
-                    body: formData
-                });
-                if (response.ok) {
-                    isLoading = false;
-                    
-                    const data = await response.json();
-                    console.log('Upload response:', data);
-                    
-                    if (data && data.songs) {
-                        const stats = data; 
+    if (!code) {
+        redirectToAuthCodeFlow(clientId);
+    } else {
+        const accessToken = await getAccessToken(clientId, code);
+        const profile = await fetchProfile(accessToken);
+        populateUI(profile);
+    }
 
-                        songs = stats.songs;
-                        albums = stats.albums;
-                        percentSongs = stats.percentSongs;
-                        percentAlbums = stats.percentAlbums;
-                        //# Fix formatting to look nice (e.g. 120 vs 120.43242)
-                        timeListened = Math.round(stats.timeListened); 
-                        rankedSongs = stats.ranked;
-                        numberOfSongs = stats.numberOfSongs;
-                        numberOfAlbums = stats.numberOfAlbums;
-                    }
-                    
-                } else {
-                    isLoading = false;
-                    alert('Upload failed.');
-                }
-            } catch (error) {
-                isLoading = false;
-                console.error('Error uploading files:', error);
-                alert('An error occurred during upload.');
-            }
-        };
-        input.click();
+    async function redirectToAuthCodeFlow(clientId) {
+        const verifier = generateCodeVerifier(128);
+        const challenge = await generateCodeChallenge(verifier);
+
+        localStorage.setItem("verifier", verifier);
+
+        const params = new URLSearchParams();
+        params.append("client_id", clientId);
+        params.append("response_type", "code");
+        params.append("redirect_uri", "http://127.0.0.1:5173/callback");
+        params.append("scope", "user-read-private user-read-email");
+        params.append("code_challenge_method", "S256");
+        params.append("code_challenge", challenge);
+
+        document.location = `https://accounts.spotify.com/authorize?${params.toString()}`;
+    }
+    function generateCodeVerifier(length) {
+        let text = '';
+        let possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+        for (let i = 0; i < length; i++) {
+            text += possible.charAt(Math.floor(Math.random() * possible.length));
+        }
+        return text;
+    }
+
+    async function generateCodeChallenge(codeVerifier) {
+        const data = new TextEncoder().encode(codeVerifier);
+        const digest = await window.crypto.subtle.digest('SHA-256', data);
+        return btoa(String.fromCharCode.apply(null, [...new Uint8Array(digest)]))
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
+    }
+    async function getAccessToken(clientId, code) {
+    // TODO: Get access token for code
+    }
+
+    async function fetchProfile(token) {
+        // TODO: Call Web API
+    }
+
+    function populateUI(profile) {
+        // TODO: Update UI with profile data
     }
 
 </script>
